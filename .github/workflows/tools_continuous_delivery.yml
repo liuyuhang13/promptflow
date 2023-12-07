@@ -9,6 +9,7 @@ on:
       - 'src/promptflow-tools/**'
       - '!README.*'
       - '!src/promptflow-tools/tests/**'
+      - '.github/**'
     workflow_dispatch:
 
 jobs:
