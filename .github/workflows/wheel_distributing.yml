@@ -26,8 +26,7 @@ on:
       PackageVersion:
         description: 'The version of the package'
         value: ${{ jobs.sdk_release.outputs.PackageVersion }}
-env:
-  versionPath: 'src/promptflow-tools/promptflow/version.txt'
+
 jobs:
   sdk_release:
     runs-on: ubuntu-latest
@@ -37,6 +36,20 @@ jobs:
 
     steps:
       - name: Check input parameters
+        run: |
+          echo "ReleaseType: ${{ inputs.ReleaseType }}"
+          echo "UploadAsLatest: ${{ inputs.UploadAsLatest }}"
+          echo "SourceFolderName: ${{ inputs.SourceFolderName }}"
+          echo "ConfigsFolderPath: ${{ inputs.ConfigsFolderPath }}"
+
+      - name: Checkout repo
+        uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Override version with workflow run number
+        id: override_version
+        if: github.event_name == 'push'
         run: |
           latest_version=$(cat 'src/promptflow-tools/promptflow/version.txt' |  grep -oP '(?<=VERSION = ")[^"]*')
           echo "latest promptflow-tools version: $latest_version"
@@ -52,19 +65,6 @@ jobs:
           echo "VERSION = \"${version}\"" > src/${{ inputs.SourceFolderName }}/promptflow/version.txt
           echo "VERSION: ${version}"
           echo "version=${version}" >> "$GITHUB_OUTPUT"
-
-      - name: Checkout repo
-        uses: actions/checkout@v3
-        with:
-          submodules: true
-
-      - name: Override version with workflow run number
-        id: override_version
-        if: github.event_name == 'push'
-        run: |
-          echo "VERSION = \"0.0.${{ github.run_number }}\"" > src/${{ inputs.SourceFolderName }}/promptflow/version.txt
-          echo "VERSION: 0.0.${{ github.run_number }}"
-          echo "version=0.0.${{ github.run_number }}" >> "$GITHUB_OUTPUT"
 
       - name: Set up conda environment
         uses: conda-incubator/setup-miniconda@v2
@@ -129,16 +129,16 @@ jobs:
           chmod +x $RUNNER_TEMP/sbom-tool
           $RUNNER_TEMP/sbom-tool generate -b ./dist -bc . -pn Test -pv 1.0.0 -ps MyCompany -nsb https://sbom.mycompany.com -V Verbose
 
-      # - name: Official release
-      #   if: inputs.ReleaseType == 'Release'
-      #   shell: bash -l {0}
-      #   run: |
-      #     conda activate release-env
-      #     python scripts/distributing/publish_package.py --config ${{ inputs.ConfigsFolderPath }}/distribution_settings.json --src_folder_name ${{ inputs.SourceFolderName }} --package_dir_path src/${{ inputs.SourceFolderName }}/dist --storage_key ${{ secrets.PACKAGE_STORAGE_KEY }} --upload_as_latest ${{ inputs.UploadAsLatest }}
+      - name: Official release
+        if: inputs.ReleaseType == 'Release'
+        shell: bash -l {0}
+        run: |
+          conda activate release-env
+          python scripts/distributing/publish_package.py --config ${{ inputs.ConfigsFolderPath }}/distribution_settings.json --src_folder_name ${{ inputs.SourceFolderName }} --package_dir_path src/${{ inputs.SourceFolderName }}/dist --storage_key ${{ secrets.PACKAGE_STORAGE_KEY }} --upload_as_latest ${{ inputs.UploadAsLatest }}
 
-      # - name: Test release
-      #   if: inputs.ReleaseType == 'Test'
-      #   shell: bash -l {0}
-      #   run: |
-      #     conda activate release-env
-      #     python scripts/distributing/publish_package.py --config ${{ inputs.ConfigsFolderPath }}/distribution_settings.json --src_folder_name ${{ inputs.SourceFolderName }} --package_dir_path src/${{ inputs.SourceFolderName }}/dist --storage_key ${{ secrets.PACKAGE_STORAGE_KEY }} --upload_as_latest ${{ inputs.UploadAsLatest }} --release_type test
+      - name: Test release
+        if: inputs.ReleaseType == 'Test'
+        shell: bash -l {0}
+        run: |
+          conda activate release-env
+          python scripts/distributing/publish_package.py --config ${{ inputs.ConfigsFolderPath }}/distribution_settings.json --src_folder_name ${{ inputs.SourceFolderName }} --package_dir_path src/${{ inputs.SourceFolderName }}/dist --storage_key ${{ secrets.PACKAGE_STORAGE_KEY }} --upload_as_latest ${{ inputs.UploadAsLatest }} --release_type test
