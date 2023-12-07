@@ -26,7 +26,8 @@ on:
       PackageVersion:
         description: 'The version of the package'
         value: ${{ jobs.sdk_release.outputs.PackageVersion }}
-
+env:
+  versionPath: 'src/promptflow-tools/promptflow/version.txt'
 jobs:
   sdk_release:
     runs-on: ubuntu-latest
@@ -37,10 +38,20 @@ jobs:
     steps:
       - name: Check input parameters
         run: |
-          echo "ReleaseType: ${{ inputs.ReleaseType }}"
-          echo "UploadAsLatest: ${{ inputs.UploadAsLatest }}"
-          echo "SourceFolderName: ${{ inputs.SourceFolderName }}"
-          echo "ConfigsFolderPath: ${{ inputs.ConfigsFolderPath }}"
+          latest_version=$(cat 'src/promptflow-tools/promptflow/version.txt' |  grep -oP '(?<=VERSION = ")[^"]*')
+          echo "latest promptflow-tools version: $latest_version"
+
+          pip install bump2version
+          cp scripts/promptflow_tools_release/.bumpversion.cfg ./
+          echo $latest_version > version.txt
+          bump2version minor --current-version $latest_version
+          next_release_version=$(head -n 1 version.txt)
+          echo "next promptflow-tools version: $next_release_version"
+
+          version="${next_release_version}rc${{ github.run_number }}"
+          echo "VERSION = \"${version}\"" > src/${{ inputs.SourceFolderName }}/promptflow/version.txt
+          echo "VERSION: ${version}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
 
       - name: Checkout repo
         uses: actions/checkout@v3
@@ -118,16 +129,16 @@ jobs:
           chmod +x $RUNNER_TEMP/sbom-tool
           $RUNNER_TEMP/sbom-tool generate -b ./dist -bc . -pn Test -pv 1.0.0 -ps MyCompany -nsb https://sbom.mycompany.com -V Verbose
 
-      - name: Official release
-        if: inputs.ReleaseType == 'Release'
-        shell: bash -l {0}
-        run: |
-          conda activate release-env
-          python scripts/distributing/publish_package.py --config ${{ inputs.ConfigsFolderPath }}/distribution_settings.json --src_folder_name ${{ inputs.SourceFolderName }} --package_dir_path src/${{ inputs.SourceFolderName }}/dist --storage_key ${{ secrets.PACKAGE_STORAGE_KEY }} --upload_as_latest ${{ inputs.UploadAsLatest }}
+      # - name: Official release
+      #   if: inputs.ReleaseType == 'Release'
+      #   shell: bash -l {0}
+      #   run: |
+      #     conda activate release-env
+      #     python scripts/distributing/publish_package.py --config ${{ inputs.ConfigsFolderPath }}/distribution_settings.json --src_folder_name ${{ inputs.SourceFolderName }} --package_dir_path src/${{ inputs.SourceFolderName }}/dist --storage_key ${{ secrets.PACKAGE_STORAGE_KEY }} --upload_as_latest ${{ inputs.UploadAsLatest }}
 
-      - name: Test release
-        if: inputs.ReleaseType == 'Test'
-        shell: bash -l {0}
-        run: |
-          conda activate release-env
-          python scripts/distributing/publish_package.py --config ${{ inputs.ConfigsFolderPath }}/distribution_settings.json --src_folder_name ${{ inputs.SourceFolderName }} --package_dir_path src/${{ inputs.SourceFolderName }}/dist --storage_key ${{ secrets.PACKAGE_STORAGE_KEY }} --upload_as_latest ${{ inputs.UploadAsLatest }} --release_type test
+      # - name: Test release
+      #   if: inputs.ReleaseType == 'Test'
+      #   shell: bash -l {0}
+      #   run: |
+      #     conda activate release-env
+      #     python scripts/distributing/publish_package.py --config ${{ inputs.ConfigsFolderPath }}/distribution_settings.json --src_folder_name ${{ inputs.SourceFolderName }} --package_dir_path src/${{ inputs.SourceFolderName }}/dist --storage_key ${{ secrets.PACKAGE_STORAGE_KEY }} --upload_as_latest ${{ inputs.UploadAsLatest }} --release_type test
