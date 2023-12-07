@@ -10,6 +10,7 @@ on:
       - '!README.*'
       - '!src/promptflow-tools/tests/**'
       - '.github/**'
+      - 'scripts/**'
     workflow_dispatch:
 
 jobs:
