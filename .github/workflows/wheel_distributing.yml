@@ -129,16 +129,16 @@ jobs:
           chmod +x $RUNNER_TEMP/sbom-tool
           $RUNNER_TEMP/sbom-tool generate -b ./dist -bc . -pn Test -pv 1.0.0 -ps MyCompany -nsb https://sbom.mycompany.com -V Verbose
 
-      - name: Official release
-        if: inputs.ReleaseType == 'Release'
-        shell: bash -l {0}
-        run: |
-          conda activate release-env
-          python scripts/distributing/publish_package.py --config ${{ inputs.ConfigsFolderPath }}/distribution_settings.json --src_folder_name ${{ inputs.SourceFolderName }} --package_dir_path src/${{ inputs.SourceFolderName }}/dist --storage_key ${{ secrets.PACKAGE_STORAGE_KEY }} --upload_as_latest ${{ inputs.UploadAsLatest }}
+      # - name: Official release
+      #   if: inputs.ReleaseType == 'Release'
+      #   shell: bash -l {0}
+      #   run: |
+      #     conda activate release-env
+      #     python scripts/distributing/publish_package.py --config ${{ inputs.ConfigsFolderPath }}/distribution_settings.json --src_folder_name ${{ inputs.SourceFolderName }} --package_dir_path src/${{ inputs.SourceFolderName }}/dist --storage_key ${{ secrets.PACKAGE_STORAGE_KEY }} --upload_as_latest ${{ inputs.UploadAsLatest }}
 
-      - name: Test release
-        if: inputs.ReleaseType == 'Test'
-        shell: bash -l {0}
-        run: |
-          conda activate release-env
-          python scripts/distributing/publish_package.py --config ${{ inputs.ConfigsFolderPath }}/distribution_settings.json --src_folder_name ${{ inputs.SourceFolderName }} --package_dir_path src/${{ inputs.SourceFolderName }}/dist --storage_key ${{ secrets.PACKAGE_STORAGE_KEY }} --upload_as_latest ${{ inputs.UploadAsLatest }} --release_type test
+      # - name: Test release
+      #   if: inputs.ReleaseType == 'Test'
+      #   shell: bash -l {0}
+      #   run: |
+      #     conda activate release-env
+      #     python scripts/distributing/publish_package.py --config ${{ inputs.ConfigsFolderPath }}/distribution_settings.json --src_folder_name ${{ inputs.SourceFolderName }} --package_dir_path src/${{ inputs.SourceFolderName }}/dist --storage_key ${{ secrets.PACKAGE_STORAGE_KEY }} --upload_as_latest ${{ inputs.UploadAsLatest }} --release_type test
